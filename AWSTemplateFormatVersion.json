@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  TargetEC2Name:
+    Type: String
+    Description: 'The name of the target volume '
+    # ボリューム名をバックアップ対象のNameにすること。
+    Default: 'volume-name'
+
+Resources:
+  EBSSnapshotPolicy:
+    Type: 'AWS::DLM::LifecyclePolicy'
+    Properties:
+      Description: !Sub '${TargetEC2Name}_backup'
+      State: 'ENABLED'
+      ExecutionRoleArn: !GetAtt DefaultIAMRole.Arn
+      PolicyDetails:
+        ResourceTypes:
+          - 'VOLUME'
+        TargetTags:
+          - Key: 'Name'
+            Value: !Sub '${TargetEC2Name}'
+        Schedules:
+          - Name: !Sub '${TargetEC2Name}_schedule'
+            CreateRule:
+              CronExpression: 'cron(0 13 ? * 7 *)'
+            RetainRule:
+              Count: 4
+
+
+
+  DefaultIAMRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'dlm.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
+
+
+Outputs:
+  EBSSnapshotPolicyId:
+    Description: 'The ID of the EBS Snapshot Lifecycle Policy'
+    Value: !Ref EBSSnapshotPolicy
