@@ -4,7 +4,7 @@ Parameters:
     Type: String
     Description: 'The name of the target volume '
     # ボリューム名をバックアップ対象のNameにすること。
-    Default: 'volume-name'
+    Default: 'test_backup'
 
 Resources:
   EBSSnapshotPolicy:
@@ -12,7 +12,7 @@ Resources:
     Properties:
       Description: !Sub '${TargetEC2Name}_backup'
       State: 'ENABLED'
-      ExecutionRoleArn: !GetAtt DefaultIAMRole.Arn
+      ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/service-role/AWSDataLifecycleManagerDefaultRole"
       PolicyDetails:
         ResourceTypes:
           - 'VOLUME'
@@ -23,23 +23,9 @@ Resources:
           - Name: !Sub '${TargetEC2Name}_schedule'
             CreateRule:
               CronExpression: 'cron(0 13 ? * 7 *)'
+
             RetainRule:
               Count: 4
-
-
-
-  DefaultIAMRole:
-    Type: 'AWS::IAM::Role'
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: 'Allow'
-            Principal:
-              Service: 'dlm.amazonaws.com'
-            Action: 'sts:AssumeRole'
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
 
 
 Outputs:
